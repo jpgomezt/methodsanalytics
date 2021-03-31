@@ -4,7 +4,7 @@ Created on Thu Mar 25 14:55:06 2021
 
 @author: david
 """
-
+from numpy import ndarray
 import pandas as pd
 import numpy as np
 from scipy.integrate import odeint
@@ -16,6 +16,10 @@ import os
 
 # pip install xlsxwriter 
 
+import random
+
+def vaccine_rate(t):
+    return 20776
 
 def adjust_rate(contact_rate, day):
     if day > 0:
@@ -23,51 +27,32 @@ def adjust_rate(contact_rate, day):
     else:
         return contact_rate
 
-def deriv_adjusted(state, t, N, beta, gamma):
-    S, I, R = state
     
-    beta = adjust_rate(beta, t)
+
+
+
+def deriv(state, t, N, beta, gamma, alpha):
+    S, I, R, V = state
     # Change in S population over time
-    dSdt = -beta * S * I / N
+
+    vaccinated_today = min(S, alpha * vaccine_rate(t))
+    infected_today = min(S, beta * S * I / N)
+    recovered_today = min(I, gamma * I)
+
+
+    dSdt = (-infected_today # Infectados ese día
+         -vaccinated_today) # Vacunados ese día
     # Change in I population over time
-    dIdt = beta * S * I / N - gamma * I
+    dIdt = (infected_today - recovered_today) # Recuperados ese día
     # Change in R population over time
-    dRdt = gamma * I
-    return dSdt, dIdt, dRdt
+    dRdt = recovered_today # Recuperados ese día
 
-def saveAsExcel(df, fileName):
+    dVdt = vaccinated_today # Vacunados ese día
+    return dSdt, dIdt, dRdt, dVdt
 
-    if '/' in fileName:
-
-        route = "./" + str(os.path.split(fileName)[1])
-
-    else:
-
-        route = "D:\Documentos\Semestre 2021-1" + fileName + ".xlsx"
-
-
-
-    writer = pd.ExcelWriter(route, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
-
-    df.to_excel(writer, 'Hoja X', index=False)
-
-    writer.save()
-    
-# The SIR model differential equations.
-
-
-def deriv(state, t, N, beta, gamma):
-    S, I, R = state
-    # Change in S population over time
-    dSdt = -beta * S * I / N
-    # Change in I population over time
-    dIdt = beta * S * I / N - gamma * I
-    # Change in R population over time
-    dRdt = gamma * I
-    return dSdt, dIdt, dRdt
-
-effective_contact_rate = 0.5
-recovery_rate = 1/4
+effective_contact_rate = 0.149
+recovery_rate = 1/8
+vaccine_efficacy = 0.9
 
 # We'll compute this for fun
 print("R0 is", effective_contact_rate / recovery_rate)
@@ -75,83 +60,42 @@ print("R0 is", effective_contact_rate / recovery_rate)
 # What's our start population look like?
 # Everyone not infected or recovered is susceptible
 total_pop = 50300000
-recovered = 2240000
-infected = 5986
+recovered = 0
+infected = 86437
+vaccinated = 0
 susceptible = total_pop - infected - recovered
 
 # A list of days, 0-160
-days = range(0, 160)
+days = range(0, 365*6)
 
 # Use differential equations magic with our population
 ret = odeint(deriv,
-             [susceptible, infected, recovered],
+             [susceptible, infected, recovered, vaccinated],
              days,
-             args=(total_pop, effective_contact_rate, recovery_rate))
-S, I, R = ret.T
+             args=(total_pop, effective_contact_rate, recovery_rate, 
+                vaccine_efficacy))
+S, I, R, V = ret.T
+
+I = list(map(abs, I))
+S = list(map(abs, S))
 
 # Build a dataframe because why not
 df = pd.DataFrame({
     'suseptible': S,
     'infected': I,
     'recovered': R,
+    'vaccinated': V,
     'day': days
 })
 
 plt.style.use('ggplot')
 df.plot(x='day',
-        y=['infected', 'suseptible', 'recovered'],
-        color=['#bb6424', '#aac6ca', '#cc8ac0'],
+        y=['infected', 'suseptible', 'recovered', 'vaccinated'],
+        color=['#bb6424', '#aac6ca', '#cc8ac0', '#ccffcc'],
         kind='area',
         stacked=True)
 
-saveAsExcel(df,"analisisVacuna")
-
-# segunda parte
-
-effective_contact_rate = 0.2
-recovery_rate = 1/14
-
-# We'll compute this for fun
-print("R0 is", effective_contact_rate / recovery_rate)
-
-# What's our start population look like?
-# Everyone not infected or recovered is susceptible
-total_pop = 1000
-recovered = 0
-infected = 1
-susceptible = total_pop - infected - recovered
-
-# A list of days
-days = range(0, 200)
-
-# First do it with our original derivation...
-ret = odeint(deriv,
-             [susceptible, infected, recovered],
-             days,
-             args=(total_pop, effective_contact_rate, recovery_rate))
-S, I, R = ret.T
-
-# ...then do it again with the adjusted one.
-ret = odeint(deriv_adjusted,
-             [susceptible, infected, recovered],
-             days,
-             args=(total_pop, effective_contact_rate, recovery_rate))
-S_adj, I_adj, R_adj = ret.T
-
-# Build a dataframe because why not
-df = pd.DataFrame({
-    'infected': I,
-    'infected_lockdown': I_adj,
-    'day': days
-})
-
-plt.style.use('ggplot')
-df.plot(x='day',
-        y=['infected', 'infected_lockdown'])
-
-
-
-
+plt.show()
 
 # If you get the error:
 #
