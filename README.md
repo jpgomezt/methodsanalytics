@@ -1,7 +1,7 @@
-# Análisis del proceso de vacunación COVID en Colombia
+# Análisis de un modelo SIRDV de COVID en Colombia
 
-Para visualizar el proyecto hay dos alternativas:
+## Para visualizar el proyecto hay dos alternativas:
 
-## 1) Utilizando google Colab utilizando el archivo proyectoSIRDV.ipynb
+*1) Utilizando google Colab utilizando el archivo proyectoSIRDV.ipynb
 
-## 2) Visualizarlo con Jupyter Notebook (https://jupyter.org/) e instalando el kernel de Julia (https://github.com/JuliaLang/IJulia.jl)
+*2) Visualizarlo con Jupyter Notebook (https://jupyter.org/) e instalando el kernel de Julia (https://github.com/JuliaLang/IJulia.jl)
