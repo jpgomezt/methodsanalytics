@@ -1,4 +1,4 @@
-# Análisis de un modelo SIRDV de COVID en Colombia
+# Análisis del modelo SIRDV-COVID en Colombia
 
 ## Para visualizar el proyecto hay dos alternativas:
 
